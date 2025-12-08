@@ -1,0 +1,285 @@
+# Local bash customizations
+# Place personal aliases, exports and functions here.
+# This file is intended to be sourced from ~/.bashrc (and only that).
+# It is safe to source this file multiple times.
+
+# Guard against being sourced more than once
+if [ -n "${DOTFILES_BASHRC_LOCAL_LOADED:-}" ]; then
+  return
+fi
+export DOTFILES_BASHRC_LOCAL_LOADED=1
+
+# -------------------------
+# Basic environment
+# -------------------------
+# Helper: prepend a directory to PATH if not present
+_add_path_prepend() {
+  case ":$PATH:" in
+    *":$1:"*) return;;
+    *) PATH="$1:$PATH";;
+  esac
+}
+
+# Helper: append a directory to PATH if not present
+_add_path_append() {
+  case ":$PATH:" in
+    *":$1:"*) return;;
+    *) PATH="$PATH:$1";;
+  esac
+}
+
+# Common local bins (idempotent)
+_add_path_prepend "$HOME/.local/bin"
+_add_path_prepend "$HOME/bin"
+_add_path_append "$HOME/.cargo/bin"   # cargo / rust
+export PATH
+
+# sensible umask for personal machines (adjust if you share files)
+: "${DOTFILES_UMASK:=0022}"
+umask "$DOTFILES_UMASK"
+
+# Editor
+if command -v nvim >/dev/null 2>&1; then
+  export EDITOR="nvim"
+elif command -v vim >/dev/null 2>&1; then
+  export EDITOR="vim"
+else
+  export EDITOR="nano"
+fi
+export VISUAL="$EDITOR"
+
+# Less: allow colors and raw control characters
+export LESS='-R'
+
+# -------------------------
+# Bash options and history
+# -------------------------
+# Append to the history file, don't overwrite it
+shopt -s histappend
+
+# Following options are useful in interactive shells
+if [ -n "$PS1" ]; then
+  # Avoid duplicate history entries and remove leading spaces
+  export HISTCONTROL=ignoredups:erasedups
+  export HISTSIZE=10000
+  export HISTFILESIZE=20000
+
+  # Record multi-line commands as a single entry and include timestamps
+  export HISTTIMEFORMAT='%F %T '
+  # Ensure each shell writes its history immediately (helps with multiple terminals)
+  PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND ; }history -a; history -n"
+fi
+
+# Protection against accidental overwrite with '>'
+set -o noclobber
+
+# -------------------------
+# Color support for ls and grep
+# -------------------------
+if command -v dircolors >/dev/null 2>&1; then
+  if [ -r "$HOME/.dircolors" ]; then
+    eval "$(dircolors -b "$HOME/.dircolors")"
+  else
+    eval "$(dircolors -b)"
+  fi
+fi
+
+if command -v grep >/dev/null 2>&1; then
+  export GREP_OPTIONS=''  # deprecated in some distros; ensure empty
+  export GREP_COLOR='1;32'
+fi
+
+# -------------------------
+# Helpful aliases
+# -------------------------
+# Keep aliases lightweight and idempotent
+alias ll='ls -alF --color=auto'
+alias la='ls -A --color=auto'
+alias l='ls -CF --color=auto'
+
+alias ..='cd ..'
+alias ...='cd ../..'
+
+# safer listing for Git repos
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gco='git checkout'
+alias gl='git log --oneline --graph --decorate'
+
+# common quick commands
+alias h='history'
+alias c='clear'
+
+# vscode profiles
+alias code-csharp='code -n . --profile "ASP.NET Core"'
+alias code-ds='code -n . --profile "Data Science"'
+alias code-java='code -n . --profile "Java General"'
+alias code-php='code -n . --profile "Symfony"'
+alias code-def='code -n . --profile "Default"'
+
+# Safe defaults for tools installed by the dotfiles scripts
+if command -v trash-put >/dev/null 2>&1; then
+  alias rm='trash-put'
+fi
+if command -v fdfind >/dev/null 2>&1; then
+  alias fd='fdfind'
+fi
+
+# -------------------------
+# Prompt with git branch
+# -------------------------
+# Colors for PS1 (with \[ \] wrappers for proper line length calculation)
+_PS_BLUE="\[\033[0;34m\]"
+_PS_GREEN="\[\033[0;32m\]"
+_PS_RED="\[\033[0;31m\]"
+_PS_YELLOW="\[\033[1;33m\]"
+_PS_RESET="\[\033[0m\]"
+
+# Get current git branch
+_git_branch() {
+  local branch=""
+  if command -v git >/dev/null 2>&1; then
+    branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return
+    if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+      echo "$branch"
+    fi
+  fi
+}
+
+# Assemble PS1 only for interactive shells
+if [ -n "$PS1" ]; then
+  # Use PROMPT_COMMAND to capture exit status before anything else runs
+  _prompt_command() {
+    local exit_code=$?
+    local branch
+
+    # Start building PS1
+    PS1="${_PS_GREEN}\u@\h${_PS_RESET}:${_PS_BLUE}\w${_PS_RESET}"
+
+    # Add exit status if non-zero
+    if [[ $exit_code -ne 0 ]]; then
+      PS1+=" ${_PS_RED}[${exit_code}]${_PS_RESET}"
+    fi
+
+    # Add git branch if in a repo
+    branch="$(_git_branch)"
+    if [ -n "$branch" ]; then
+      PS1+=" (${_PS_YELLOW}${branch}${_PS_RESET})"
+    fi
+
+    PS1+="\n\$ "
+  }
+
+  PROMPT_COMMAND="_prompt_command"
+fi
+
+# -------------------------
+# Completion and fzf (if available)
+# -------------------------
+# System bash completion
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+  # source it only if not already loaded
+  . /etc/bash_completion
+fi
+
+# fzf (if installed via package or user)
+if command -v fzf >/dev/null 2>&1; then
+  # sensible default command to avoid traversing .git and node_modules
+  export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git --exclude node_modules'
+  export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :200 {}'"
+
+  # try to source shell extensions if present
+  if [ -f "${HOME}/.fzf.bash" ]; then
+    # shellcheck disable=SC1090
+    . "${HOME}/.fzf.bash"
+  elif [ -f /usr/share/fzf/key-bindings.bash ]; then
+    # shellcheck disable=SC1090
+    . /usr/share/fzf/key-bindings.bash
+  fi
+fi
+
+# -------------------------
+# SSH agent helper
+# -------------------------
+# start a per-login ssh-agent and add keys when needed (idempotent)
+start_ssh_agent() {
+  if [ -n "${SSH_AUTH_SOCK:-}" ]; then
+    return 0
+  fi
+
+  # Try connecting to existing agent managed by keychain/gnome-keyring first
+  if [ -S "${XDG_RUNTIME_DIR:-}/ssh-agent.socket" ]; then
+    export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"
+    return 0
+  fi
+
+  # Fallback: start ssh-agent and export variables into this shell
+  eval "$(ssh-agent -s)" >/dev/null 2>&1 || return 1
+  # Optionally add default key
+  if [ -f "$HOME/.ssh/id_rsa" ]; then
+    ssh-add -q "$HOME/.ssh/id_rsa" >/dev/null 2>&1 || true
+  fi
+}
+
+# -------------------------
+# tmux convenience
+# -------------------------
+# Attach to a tmux session if present or start a new one named after the user
+ta() {
+  if ! command -v tmux >/dev/null 2>&1; then
+    echo "tmux not installed"
+    return 1
+  fi
+  if tmux ls >/dev/null 2>&1; then
+    tmux attach -t "${1:-default}"
+  else
+    tmux new -s "${1:-default}"
+  fi
+}
+
+# -------------------------
+# Simple git helper
+# -------------------------
+# Create and checkout a branch, or switch if it already exists
+gcb() {
+  if [ $# -eq 0 ]; then
+    echo "usage: gcb <branch>"
+    return 1
+  fi
+  git checkout -b "$1" 2>/dev/null || git checkout "$1"
+}
+
+# -------------------------
+# Misc
+# -------------------------
+# Human readable df
+dfh() {
+  df -h "$@"
+}
+
+# Quick python virtualenv helper (works with venv)
+venv() {
+  if [ -z "$1" ]; then
+    echo "usage: venv <path>"
+    return 1
+  fi
+  python -m venv "$1"
+  # shellcheck disable=SC1090
+  . "$1/bin/activate"
+}
+
+# -------------------------
+# End of file note
+# -------------------------
+# Add your customizations below this line. Keep them idempotent where possible.
+# Example:
+#   export MY_TOOL_OPTS="--opt"
+#
+# If you store this file in your dotfiles repo, symlink it from your $HOME for
+# easy portability:
+#   ln -s ~/dev/dotfiles/.config/bash/.bashrc_local ~/.bashrc_local
+#
+# If your main ~/.bashrc sources an entire ~/.bashrc.d/ directory, you can
+# split this into multiple files (00-paths.sh, 10-aliases.sh, etc.).
