@@ -35,6 +35,7 @@ Modular, idempotent setup scripts located in `scripts/`:
 | `10-user-apps.sh` | Flatpak apps, LibreWolf, Brave |
 | `11-shell-config.sh` | Shell configuration (symlinks) |
 | `12-ghostty.sh` | Ghostty terminal emulator |
+| `13-python-dojo.sh` | Dojo conda environment for Python, AI & ML tooling |
 
 ### Configuration Files
 

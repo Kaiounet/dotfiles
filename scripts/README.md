@@ -1,6 +1,6 @@
 # Fedora 43 Modular Setup Scripts
 
-This directory contains modular setup scripts for Fedora 43 Workstation post-installation configuration.
+This directory contains modular setup scripts for Fedora 43 Workstation post-installation configuration, including the new `13-python-dojo.sh` environment provisioner for AI/ML workflows.
 
 ## Overview
 
@@ -21,6 +21,7 @@ Instead of one monolithic script, the setup is broken into focused, independent 
 | `10-user-apps.sh` | Flatpak apps, browsers |
 | `11-shell-config.sh` | Shell configuration (symlinks or copies) |
 | `12-ghostty.sh` | Ghostty terminal emulator |
+| `13-python-dojo.sh` | Dojo conda environment for Python, AI & ML tooling |
 
 ### Utility Scripts
 
@@ -69,6 +70,10 @@ bash scripts/check.sh --tools       # Check installed tools
 ```
 
 ## Shell Configuration
+
+## Python & AI Environment
+
+The `13-python-dojo.sh` script creates a reproducible `dojo` conda environment that installs NumPy, pandas, Jupyter, Poetry, PyTorch, FastAPI, LangChain, and other core tools, then registers the kernel and outputs a `pip freeze` manifest under `.config/dotfiles/envs/dojo-requirements.txt`.
 
 The `11-shell-config.sh` script manages your shell configuration files.
 
