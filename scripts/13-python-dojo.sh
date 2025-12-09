@@ -15,7 +15,7 @@ MANIFEST_DIR="$HOME/.config/dotfiles/envs"
 MANIFEST_FILE="$MANIFEST_DIR/dojo-requirements.txt"
 
 BASE_PACKAGES=(
-    "python=3.12"
+    "python=3.11"
     numpy
     pandas
     scipy
