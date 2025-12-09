@@ -9,7 +9,7 @@
 if [ -n "${_DOTFILES_COMMON_LOADED:-}" ]; then
     return 0
 fi
-export _DOTFILES_COMMON_LOADED=1
+_DOTFILES_COMMON_LOADED=1
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colors
