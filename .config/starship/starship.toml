@@ -1,0 +1,12 @@
+# Starship Configuration
+# Documentation: https://starship.rs/config/
+#
+# Starship has excellent defaults - we only override what we want different.
+# Most modules auto-detect and display only when relevant.
+
+# Timeout for commands executed by starship (in milliseconds)
+command_timeout = 1000
+
+# Show exit code on failure
+[status]
+disabled = false

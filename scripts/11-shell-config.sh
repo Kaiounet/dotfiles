@@ -23,10 +23,12 @@ DOTFILES_ROOT="$(get_dotfiles_root)"
 # Source files in the dotfiles repo
 SRC_BASHRC="$DOTFILES_ROOT/.config/bash/.bashrc"
 SRC_BASHRC_LOCAL="$DOTFILES_ROOT/.config/bash/.bashrc_local"
+SRC_STARSHIP="$DOTFILES_ROOT/.config/starship/starship.toml"
 
 # Destination files in user's home
 DEST_BASHRC="$HOME/.bashrc"
 DEST_BASHRC_LOCAL="$HOME/.bashrc_local"
+DEST_STARSHIP="$HOME/.config/starship.toml"
 
 # Determine mode: symlink (default) or copy
 USE_COPY_MODE="${COPY_MODE:-0}"
@@ -106,6 +108,21 @@ else
 EOF
         info "Created empty $DEST_BASHRC_LOCAL"
     fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy Starship configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+step "Deploying Starship configuration..."
+
+# Ensure ~/.config exists
+mkdir -p "$HOME/.config"
+
+if [ -f "$SRC_STARSHIP" ]; then
+    $DEPLOY_FUNC "$SRC_STARSHIP" "$DEST_STARSHIP" || true
+else
+    warn "Starship config not found at $SRC_STARSHIP; skipping"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
