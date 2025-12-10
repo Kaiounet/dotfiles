@@ -88,8 +88,9 @@ if command -v dircolors >/dev/null 2>&1; then
 fi
 
 if command -v grep >/dev/null 2>&1; then
-  export GREP_OPTIONS=''  # deprecated in some distros; ensure empty
-  export GREP_COLOR='1;32'
+  # GREP_OPTIONS and GREP_COLOR are deprecated; use GREP_COLORS instead
+  unset GREP_OPTIONS
+  export GREP_COLORS='mt=1;32'
 fi
 
 # -------------------------
@@ -162,8 +163,13 @@ if command -v fzf >/dev/null 2>&1; then
   if [ -f "${HOME}/.fzf.bash" ]; then
     # shellcheck disable=SC1090
     . "${HOME}/.fzf.bash"
+  elif [ -f /usr/share/fzf/shell/key-bindings.bash ]; then
+    # Fedora packages fzf shell files under /usr/share/fzf/shell/
+    # shellcheck disable=SC1091
+    . /usr/share/fzf/shell/key-bindings.bash
   elif [ -f /usr/share/fzf/key-bindings.bash ]; then
-    # shellcheck disable=SC1090
+    # Other distros may use this path
+    # shellcheck disable=SC1091
     . /usr/share/fzf/key-bindings.bash
   fi
 fi
